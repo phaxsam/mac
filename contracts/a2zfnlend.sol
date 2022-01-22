@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract p2ploan {  
 
+uint256 public activeLoans = 0;
+mapping(address => uint256) public lendersBalance;
+
+uint256 a2zFee = div(3, 100);
 
 enum Status{initial, lent, paid, destroyed}
 Status status;
@@ -84,13 +88,21 @@ function fillRequest(uint256 id) public returns(bool) {
 
      activeloans += 1;
      lendersBalance[request.lender] += 1;
+     
 
-     IERC20.transferFrom(msg.sender, request.borrower, request.requestedAmount);
+     uint256 feeLast = fee(_interest, _a2zfee);
+     
+     IERC20.transferFrom(msg.sender, address(this), feeLast);
+
+     uint256 lastAmount = resortAmount(_interset, _amount);
+
+     IERC20.transferFrom(msg.sender, request.borrower, lastAmount);
 
      emit requestedFilled(id, msg.sender);
 
      return true;
 }
+
 
  
 function payLoan(uint256 id, uint256 _amount, address _from) public returns (bool){
@@ -108,10 +120,32 @@ function payLoan(uint256 id, uint256 _amount, address _from) public returns (boo
     lendersBalance[request.lender] -=1;
      
      IERC20.transfer(request.collvalue(id), request.borrower(id));
-     IERC20.transferFrom(msg.sender, request.lender(id), request.requestedAmount(id));
+     IERC20.transferFrom(msg.sender, address(this), request.requestedAmount(id));
 
      return true;
-}           
+}    
+
+
+function  fee(uint256 _interest, uint256 _a2zfee) internal returns (uint256) {
+
+    uint256 _interest = request.interestRate;
+    uint256 _ a2zfee = a2zfee;
+
+    uint256 fee =  mul(_interest, _a2zfee);
+
+    return fee;
+}
+
+
+function resortAmount(uint256 _interest, uint256 _amount) internal returns(uint256){
+    uint256 _interest = request.interestRate;
+    uint256 _amount = request.requestedAmount;
+
+    uint256 amount = sub(_amount, _interest);
+
+    return amount;
+
+}
 
 function liquidate(uint256 id)
 
